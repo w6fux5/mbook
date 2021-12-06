@@ -1,17 +1,54 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
+import * as esBuild from 'esbuild-wasm';
+import { unpkgPathPlugin } from './plugin/unpkg-path-plugin';
 
-ReactDOM.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-  document.getElementById('root')
-);
+import ReactDom from 'react-dom';
+import { useState, useEffect, useRef } from 'react';
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
+const App = () => {
+  const ref = useRef<any>();
+
+  const [input, setInput] = useState('');
+  const [code, setCode] = useState('');
+
+  const startService = async () => {
+    ref.current = await esBuild.startService({
+      worker: true,
+      wasmURL: './esbuild.wasm',
+    });
+  };
+
+  const onClick = async () => {
+    if (!ref.current) return;
+
+    const result = await ref.current.build({
+      entryPoints: ['index.js'],
+      bundle: true,
+      write: false,
+      plugins: [unpkgPathPlugin()],
+    });
+
+    console.log(result);
+
+    setCode(result.outputFiles[0].text);
+  };
+
+  useEffect(() => {
+    startService();
+  }, []);
+
+  return (
+    <div>
+      <textarea
+        value={input}
+        onChange={e => setInput(e.target.value)}
+      ></textarea>
+      <div>
+        <button onClick={onClick}>submit</button>
+      </div>
+
+      <pre>{code}</pre>
+    </div>
+  );
+};
+
+ReactDom.render(<App />, document.querySelector('#root'));
