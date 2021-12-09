@@ -1,6 +1,12 @@
 import * as esbuild from 'esbuild-wasm';
 import axios from 'axios';
 
+import localForage, { getItem } from 'localforage';
+
+const fileCatch = localForage.createInstance({
+  name: 'fileCatch',
+});
+
 export const unpkgPathPlugin = () => {
   return {
     name: 'unpkg-path-plugin',
@@ -12,15 +18,18 @@ export const unpkgPathPlugin = () => {
           return { path: args.path, namespace: 'a' };
         }
 
+        if (args.path.includes('./') || args.path.includes('../')) {
+          return {
+            path: new URL(args.path, `https://unpkg.com${args.resolveDir}/`)
+              .href,
+            namespace: 'a',
+          };
+        }
+
         return {
           path: `https://unpkg.com/${args.path}`,
           namespace: 'a',
         };
-
-        // return {
-        //   path: 'https://unpkg.com/tiny-test-pkg@1.0.0/index.js',
-        //   namespace: 'a',
-        // };
       });
 
       build.onLoad({ filter: /.*/ }, async (args: any) => {
@@ -30,18 +39,29 @@ export const unpkgPathPlugin = () => {
           return {
             loader: 'jsx',
             contents: `
-              const message = require('tiny-test-pkg')
-              console.log(message);
+            import React, {useState} from 'react@17.0.2';
+            import ReactDom from 'react-dom';
             `,
           };
         }
 
-        const { data } = await axios.get(args.path);
+        const cachedResult = await fileCatch.getItem<esbuild.OnLoadResult>(args.path);
 
-        return {
+        if(cachedResult) return cachedResult
+
+        const { data, request } = await axios.get(args.path);
+
+ 
+
+        const result: esbuild.OnLoadResult =  {
           loader: 'jsx',
           contents: data,
+          resolveDir: new URL('./', request.responseURL).pathname,
         };
+
+        await fileCatch.setItem(args.path, result)
+
+        return result
       });
     },
   };
