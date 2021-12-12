@@ -5,6 +5,9 @@ import { fetchPlugin } from './plugin/fetch-plugin';
 import ReactDom from 'react-dom';
 import { useState, useEffect, useRef } from 'react';
 
+// Components
+import CodeEditor from './components/code-editor';
+
 const App = () => {
   const ref = useRef<any>();
   const iframeRef = useRef<any>();
@@ -67,12 +70,16 @@ const App = () => {
 
   return (
     <div>
-      <textarea
+      <CodeEditor
+        initialValue="const a = 1;"
+        onChange={value => setInput(value)}
+      />
+      {/* <textarea
         rows={10}
         cols={50}
         value={input}
         onChange={e => setInput(e.target.value)}
-      ></textarea>
+      ></textarea> */}
       <div>
         <button onClick={onClick}>submit</button>
       </div>
