@@ -1,3 +1,4 @@
+import 'bulmaswatch/superhero/bulmaswatch.min.css';
 import * as esBuild from 'esbuild-wasm';
 import { unpkgPathPlugin } from './plugin/unpkg-path-plugin';
 import { fetchPlugin } from './plugin/fetch-plugin';
